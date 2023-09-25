@@ -6,7 +6,8 @@
 # 4) Simulation study 1 endpoint
 # 5) Simulation study 2 endpoints
 --------------------------------------------------
-
+# Required packages
+  
 library(dplyr)
 library(ggplot2)
 library(ggarrange)
@@ -44,43 +45,39 @@ Fig1B <- ggplot(data = fig1, aes(x = retention, y = rate))+
                alpha=0.2)
 
 # Combine Fig1A and Fig1B
-#tiff("G:\\Papers\\BDT pilots\\fig1.tiff", units="in", width=6, height=3, res=300)
 ggarrange(Fig1A, Fig1B, labels = c("A", "B"),  
           ncol=2, nrow=1, common.legend = TRUE, legend="bottom")
-#dev.off()
 
 
-# Figure 2 & Fake data --------------------------
-# Fake data creation
+# Fake data creation ---------------
+
 n <- 40
-
 set.seed(123)
 lam <- 2.91/4.33
 y <- rpois(30,lam) # Simulate weekly recruitment
-rate2 <- y[1:22] # Keep week needed (22 wks) to get 20 dyads 
+rate2 <- y[1:22] # Keep weeks needed (22 wks) to get 20 dyads 
 
 set.seed(101)
-retention2 <- rbinom(n,1,0.84) # Simualte retention data
+retention2 <- rbinom(n,1,0.84) # Simulate retention data
 
 set.seed(109)
 # Bootstrap
 boot1 <- matrix(NA,10000,2)
 for (i in 1:10000){
-  
   boot1[i,1] <- mean(sample(rate2,22,replace = TRUE))*4.33 # recruitement rate
   boot1[i,2] <- mean(sample(retention2,n,replace = TRUE))
-  
 }
 
 boot1 <- as.data.frame(boot1)
+
+
+# Figure 2  -------------------------
 
 addcords <- c(NA, 7, 1)
 addcords2 <- c(NA, 7, 0.7)
 
 fil_2 <- rbind(fig1, addcords,addcords2)
 fil_2 <- fil_2[fil_2[,"retention"]>=0.7,]
-
-#tiff("G:\\Papers\\BDT pilots\\fig2.tiff", units="in", width=5, height=4, res=300)
 
 ggplot(data = fig1, aes(x = retention, y = rate))+
   geom_line() + 
@@ -92,8 +89,6 @@ ggplot(data = fig1, aes(x = retention, y = rate))+
   geom_jitter(data = boot1, 
               mapping = aes(x = V2, y = V1), size = 0.1) 
 
-
-#dev.off()
 # Figure 3--------------------------
 # Optimization of cut point via simulation
 
@@ -113,14 +108,13 @@ for (j in 1:10000){
   #Divided by 4.333 to simulate weekly values
   
   # Generates a sample of varying weeks that enrolls a total
-  # of 20 participants
+  # of 20 participants, this code identified how many weeks were needed
   csum <- cumsum(rate2)
   nl <- which(csum>=dyadn)[1]
   rate2 <- rate2[1:nl]
   diff <- sum(rate2)-dyadn
   rate2[nl] <- rate2[nl]-diff
-  #sum(rate2)
-  
+
   # Generate binary retention data
   retention2 <- rbinom(n,1,ret)
 
@@ -129,12 +123,12 @@ for (j in 1:10000){
   # same example, this checks for exceeding the JFS boundary
   boot2 <- matrix(NA,1000,3)
   for (i in 1:1000){
-    
     boot2[i,1] <- mean(sample(rate2,nl,replace = TRUE))*4.33 # recruitment rate
     boot2[i,2] <- mean(sample(retention2,n,replace = TRUE))
     boot2[i,3] <- ifelse(boot2[i,2]>=0.7 && boot2[i,1] >= 
              rate[which(round(retention,3) == round(boot2[i,2],3))] ,1,0)
   }
+  
   empty_rows <- which(rowSums(is.na(proceedopt)) == ncol(proceedopt))
   empt <- empty_rows[1]
   
@@ -148,13 +142,11 @@ proceedopt2 <- data.frame(proceedopt)
 colnames(proceedopt2) <- c("Combination", "probability")
 proceedopt2$Combination <- ifelse(proceedopt2$Combination == 1, "S", "SN")
 
-#tiff("G:\\Papers\\JFS\\fig3.tiff", units="in", width=5, height=4, res=300)
 ggplot(proceedopt2,aes(x=probability, fill=Combination)) + geom_density(alpha=0.3) + theme_bw() + ylab("Density") +
   xlab("Probability of being in JFS") +scale_fill_manual(values=c( "#56B4E9","#ffa600"))
-#dev.off()
 
 
-# Get cutpoint:
+# Get cut point:
 proceed_S <- proceedopt2[proceedopt2$Combination == "S",]
 proceed_SN <- proceedopt2[proceedopt2$Combination == "SN",]
 
@@ -177,7 +169,7 @@ picker[which(picker[,4] == max(picker[,4])),c(1,2,3)]
 
 
 # Simulation study 1 endpoint ---------------
-# Simulation to compare, Threshold, Tolerance, FA & Hyp. Test.
+# Simulation to compare, Threshold, Tolerance, & Hyp. Test.
 
 n4sim1 <- 40
 threshold <- 0.8
@@ -199,7 +191,6 @@ sum(dbinom(30:40,40,.8))
 # 30/40 = 0.75, so tolerance = 0.05
 # We would expect P_FA(SN) = 0.31
 sum(dbinom(30:40,40,.7))
-
  
  # For N = 119
  sum(dbinom(92:119,119,.8))
@@ -247,8 +238,9 @@ sum(dbinom(30:40,40,.7))
  }
  colMeans(checkHT1)
  # We get the exact same operating characteristics as the threshold approach,
- # because the p-value for the binomial exact test cannot be < 0.05, unless the
- # we are already in the green zone, so the amended approach reverts to the simple approach
+ # because the p-value for the binomial exact test cannot be < 0.05, unless 
+ # we are already in the green zone, so the amended approach reverts to the 
+ # simple approach
  
  # We'd like to get fair comparison between FA approach and Hyp. Test so we set the 
  # Type I error rate for the Hyp. Test to 0.31, this gives as close to P_FA(S) = 0.80 
@@ -324,14 +316,15 @@ sum(dbinom(30:40,40,.7))
    
  }
  colMeans(checkHT1o2)
- # For simple, we get the threshold approach as expected, for Expanded we get the tolerance
+ # For simple, we get the threshold approach as expected, for Expanded we get 
+ # the tolerance
  # approach values (within simulation error) of 0.8346 and 0.3168 
  
- # **Optimize Feasibility Area ---------------------------
+ # **Optimize JFS  ---------------------------
  # Need to optimize the cut point probability
  # (Note: This code takes ~ 6 minutes to run)
  n4sim1 <- 40 # Change to 119 to run for N = 119
- a <- Sys.time()
+ #a <- Sys.time()
  feas_ret <- c(0.70, 0.80)
  set.seed(249)
  FAsimopt <- matrix(NA,10000,2)
@@ -342,25 +335,22 @@ sum(dbinom(30:40,40,.7))
      retentionE <- rbinom(n4sim1,1,ret)
      
      # Bootstrap
-     # Retention and rate are defined for Figure 1, which is the
-     # same example, this checks for exceeding the JFS boundary
      boots1o <- matrix(NA,1000,1)
      for (i in 1:1000){
-       
        boots1o[i,1] <- ifelse(mean(sample(retentionE,n4sim1,replace = TRUE))>=0.8,1,0) # recruitment rate
-      
      }
+     
      empty_rows <- which(rowSums(is.na(FAsimopt)) == ncol(FAsimopt))
      empt <- empty_rows[1]
      
      FAsimopt[empt,1] <- cond
      FAsimopt[empt,2] <- mean(boots1o)
      
-     
-     print(empt)
+    # print(empt)
    } # Simulations loop
  } # Condition loop
- Sys.time()-a
+ #Sys.time()-a
+ 
  # Cut point to discriminate
  
  breaklist <- c(seq(0,1, 0.001))
@@ -373,8 +363,6 @@ sum(dbinom(30:40,40,.7))
  for (l in 1:1001){
    picker[l,2] <- length(FAsimopt_S[FAsimopt_S[,2]>=picker[l,1],2])/length(FAsimopt_S[,2])
    picker[l,3] <- length(FAsimopt_SN[FAsimopt_SN[,2]>=picker[l,1],2])/length(FAsimopt_SN[,2])
-   
-   
  }
 
  cutpoint <- picker[tail(which(picker[,2]>=0.80), n = 1),1]
@@ -382,7 +370,8 @@ sum(dbinom(30:40,40,.7))
  # P_FA(S) = 0.8022 , P_FA(SN) = 0.2704
  # We'll round down to 0.29, due to possible simulation error and the desire to 
  # exceed 80%
- # For comparison to tolerance and HT, a cut point of 0.22 gives P_FA(SN) = 0.3084
+ # For comparison to tolerance and HT, a cut point of 0.22 
+ # gives P_FA(SN) = 0.3084
  
  # Re-run with N = 119 (Table 2 in HT paper) with same seed,
  # we get a cut point of 0.19
@@ -390,7 +379,7 @@ sum(dbinom(30:40,40,.7))
  # For comparison to HT, 0.207
 
 # **Simulation 1 code ---------------
-a <- Sys.time()
+#a <- Sys.time()
  nsim1vect <- c(40, 119)
  effectv <- c(0.7,0.8)
 
@@ -412,9 +401,10 @@ a <- Sys.time()
        
        # Threshold
        out_sim1[empt,3] <- ifelse(mean(sampls)>=0.8,1,0)
+       
        # Tolerance
        thresh <- ifelse(nsim1 == 40, 0.05,0.0268908 )
-       out_sim1[empt,4] <- ifelse(mean(sampls)>=threshold-thresh,1,0)
+       out_sim1[empt,4] <- ifelse(mean(sampls)>=0.80-thresh,1,0)
        
        # Hypothesis test simple (same as threshold)
        out_sim1[empt,5] <- ifelse(mean(sampls)>=0.8,1,0)
@@ -428,21 +418,20 @@ a <- Sys.time()
        # HT Expanded
        out_sim1[empt,6] <- ifelse((out_sim1[empt,3]+Amber_minor) > 0 ,1,0)
        
-       
-       # Feasibility area
+       # JFS
        bootsim1 <- matrix(NA,1000,1)
        for (i in 1:1000){
-         
-         bootsim1[i,1] <- ifelse(mean(sample(sampls,nsim1,replace = TRUE))>=0.8,1,0) # recruitment rate
-         
+         bootsim1[i,1] <- ifelse(mean(sample(sampls,nsim1,replace = TRUE))>=0.8,1,0) 
        }
+       
+      # Cut point to achieve P_{G}(S) >= 0.80
        disc <- ifelse(nsim1 == 40,0.29, 0.19)
        
        out_sim1[empt,7] <- ifelse(mean(bootsim1) >= disc,1,0)
        
+       # Specified cut point to match with HT
        directcompare <- ifelse(nsim1 == 40,0.22, 0.207)
        out_sim1[empt,8] <- ifelse(mean(bootsim1) >= directcompare,1,0)
-       
        
     print(empt)
      }
@@ -454,7 +443,7 @@ a <- Sys.time()
                              "HTE", "FA", "FAfair")
  
  out_sim1work %>% dplyr::group_by(N, effect) %>% 
-   dplyr::summarise(across(everything(), list(mean)))
+   dplyr::summarise(across(everything(), list(mean))) -> tablesim1
  
 
  # Simulation study 2 endpoints -----------------------
@@ -466,31 +455,30 @@ a <- Sys.time()
  sum(dbinom(32:40,40,.8))^2
  sum(dbinom(32:40,40,.7))^2
  # Both hitting threshold
- # Pproc(S) = 0.35
- # Pproc(SN) = 0.012
+ # P_{G}(S) = 0.35
+ # P_{G}(SN) = 0.012
  #n = 119
  sum(dbinom(96:119,119,.8))^2
  sum(dbinom(96:119,119,.7))^2
  # Both hitting threshold
- # Pproc(S) = 0.23
- # Pproc(SN) = < 0.0001
+ # P_{G}(S) = 0.23
+ # P_{G}(SN) = < 0.0001
  
  # **Optimize tolerance ------------------
  # For N = 40
  sum(dbinom(29:40,40,.8))^2
  # Need to observe 29/40 success  in both endpoints to have probability of both
- # being in P_FA(S) >= 0.80 (0.8326467)
+ # being in P_{G}(S) >= 0.80 (0.8326467)
  # 29/40 = 0.725, so tolerance = 0.075
- # We would expect P_FA(SN) = 0.19
+ # We would expect P_{G}(SN) = 0.19
  sum(dbinom(29:40,40,.7))^2
  
  # For N = 119
  sum(dbinom(90:119,119,.8))^2 # 0.8135
  # Need to observe 90/119 success in both endpoints
  # 90/119 = 0.7563025, so tolerance = 0.0436975
- # We would expect P_FA(SN) = 0.01
+ # We would expect P_{G}(SN) = 0.01
  sum(dbinom(90:119,119,.7))^2
- 
  
  
  # **Optimize Hypothesis test
@@ -499,11 +487,11 @@ a <- Sys.time()
  # Hyp. test procedure, 2 options:
  # 1) Simple: E >= GLL -> Go, otherwise Don't (not considering amend proceed)
  # this will have same operating char. as threshold
- # 2) Expanded: (E >= GLL) -> Go or (E >= RUL & pval < 0.05) -> Go
+ # 2) Expanded: (E >= GLL) -> Go or (E >= RUL & pval < alpha threshold) -> Go
  
  # N = 40
  set.seed(429)
-pcut <- 0.45
+ pcut <- 0.45 # Specified alpha level to achieve P_{G}(S) >= 0.80
  checkHT2 <- matrix(NA,10000,4)
  for (f in 1:10000){
    samp801 <- rbinom(40,1,0.8)
@@ -518,7 +506,7 @@ pcut <- 0.45
    
    # Expanded
    # This calculates if either the estimate is in the green zone,
-   # or the p-value is < 0.05, while the estimate is not in RED zone
+   # or the p-value is < alpha level, while the estimate is not in RED zone
    # Both endpoints need to be Go for us to proceed
    NotinREDs1 <- ifelse(mean(samp801) > 0.70,1,0)
    p801 <- ifelse(binom.test(sum(samp801), 40, p = 0.70, 
@@ -557,7 +545,7 @@ pcut <- 0.45
 
  # For N = 119
  set.seed(478)
- pcut <- 0.11
+ pcut <- 0.11 # Alpha level to achieve P_{G}(S) >= 0.80
  checkHT2 <- matrix(NA,10000,4)
  for (f in 1:10000){
    samp801 <- rbinom(119,1,0.8)
@@ -572,8 +560,9 @@ pcut <- 0.45
    
    # Expanded
    # This calculates if either the estimate is in the green zone,
-   # or the p-value is < 0.05, while the estimate is not in RED zone
+   # or the p-value is < alpha level, while the estimate is not in RED zone
    # Both endpoints need to be Go for us to proceed
+   
    NotinREDs1 <- ifelse(mean(samp801) > 0.70,1,0)
    p801 <- ifelse(binom.test(sum(samp801), 119, p = 0.70, 
                              alternative = "greater")$p.value < pcut,1,0)
@@ -610,10 +599,10 @@ pcut <- 0.45
  # Expanded we get the tolerance
  # approach values (within simulation error) of 0.8178  and 0.01 
  
- # **Optimize Joint Feasibility Area ---------------------------
+ # **Optimize Joint Feasibility Space ---------------------------
  # Need to optimize the cut point probability
  # (Note: This code takes ~ 15 minutes to run)
- a <- Sys.time()
+ #a <- Sys.time()
  feas_ret <- c(0.70, 0.80)
  set.seed(632)
  FAsimopt2 <- matrix(NA,10000,2)
@@ -630,14 +619,11 @@ pcut <- 0.45
      # same example, this checks for exceeding the JFS boundary
      boots2o <- matrix(NA,1000,3)
      for (i in 1:1000){
-       
        resamprows <-sample(1:n,n,replace = TRUE) 
        boots2o[i,1] <- ifelse(mean(retentionE[resamprows])>=0.8,1,0) # recruitment rate
        boots2o[i,2] <- ifelse(mean(retentionE2[resamprows])>=0.8,1,0) # recruitment rate
        boots2o[i,3] <- ifelse(boots2o[i,1] + boots2o[i,2] ==2,1,0) # recruitment rate
-       
      }
-     
      
      empty_rows <- which(rowSums(is.na(FAsimopt2)) == ncol(FAsimopt2))
      empt <- empty_rows[1]
@@ -645,11 +631,10 @@ pcut <- 0.45
      FAsimopt2[empt,1] <- cond
      FAsimopt2[empt,2] <- mean(boots2o[,3])
      
-     
-     print(empt)
+    # print(empt)
    } # Simulations loop
  } # Condition loop
- Sys.time()-a
+ #Sys.time()-a
  
  # Cut point to discriminate
  breaklist <- c(seq(0,1, 0.001))
@@ -662,8 +647,6 @@ pcut <- 0.45
  for (l in 1:1001){
    picker[l,2] <- length(FAsimopt_S[FAsimopt_S[,2]>=picker[l,1],2])/length(FAsimopt_S[,2])
    picker[l,3] <- length(FAsimopt_SN[FAsimopt_SN[,2]>=picker[l,1],2])/length(FAsimopt_SN[,2])
-   
-   
  }
  
  cutpoint <- picker[tail(which(picker[,2]>=0.80), n = 1),1]
@@ -671,25 +654,22 @@ pcut <- 0.45
  picker[tail(which(picker[,2]>=0.80), n = 1),3]
  # Gives cut point of 0.096
  # P_FA(S) = 0.8016 , P_FA(SN) = 0.129
- # For comparison to tolerance and HT, a cut point of 0. gives P_FA(SN) = 0.
- 
+
  # Re-run with N = 119 (Table 2 in HT paper) with same seed,
  # we get a cut point of 0.049
  # P_FA(S) = 0.8006 , P_FA(SN) = 0.0034
  
  
- 
  # **Simulation 2 code ------------------
- # Note before running: This code takes ~15 hours to run on a single core
+ # Note before running: This code takes ~22 minutes to run on a single core
  
  set.seed(5473)
  nsim1vect <- c(40, 119)
  effectv <- c(0.7,0.8)
- rhos <- c(0, 0.25, 0.50)
+ rhos <- c(0)
  
  out_sim2 <- matrix(NA,(2*2*3*5000),9)
- nv <- ev <- rv <-1
- 
+
  at <- Sys.time()
  for (nv in 1:2){
    nsim1 <- nsim1vect[nv]
@@ -697,7 +677,7 @@ pcut <- 0.45
    for (ev in 1:2){
      ret_effect <- effectv[ev]
      
-     for (rv in 1:3){
+     for (rv in 1:1){
        rho <- rhos[rv]
        # Calculate probabilities for correlated binomial data
        a <- function(rho, p , q ) {
@@ -715,7 +695,6 @@ pcut <- 0.45
          stop("Error: a probability is negative.")
        }
        
-
        for (p in 1:5000){
          
          # Generate correlated binomial data
@@ -786,7 +765,6 @@ pcut <- 0.45
          
          
          # JFS 
-         
          boot2 <- matrix(NA,1000,1)
          for (l in 1:1000){
            rowsamp <- sample(1:nsim1, nsim1, replace = TRUE)
@@ -798,26 +776,24 @@ pcut <- 0.45
          disc1 <- ifelse(nsim1 == 40,0.096, 0.049)
          #Fair
          disc2 <- ifelse(nsim1 == 40, 0.062, 0.028)
-         # JFS 80
+         # JFS cut point to get P_{G}(S) >= 0.80
          out_sim2[empt,8] <- ifelse( mean(boot2) >= disc1,1,0)   
          
-         # JFS matched to HT
+         # JFS cut point used in paper (this is matched to HT)
          out_sim2[empt,9] <- ifelse( mean(boot2) >= disc2,1,0)   
          
        } # p loop
      } # rho loop
    } # effect loop
  } #n loop
-Sys.time()-at
+#Sys.time()-at
  
-
 out_sim2work <- data.frame(out_sim2)
 colnames(out_sim2work) <- c("N", "effect", "rho", "Threshold", "Tolerance", "HTS", 
                             "HTE", "FA", "FAfair")
 
 out_sim2work %>% dplyr::group_by(N, effect, rho) %>% 
   dplyr::summarise(across(everything(), list(mean))) ->tablesim2
-
 
 # Simulation study 3 endpoints -------------------
 # All optimizations below assume independence
@@ -826,39 +802,40 @@ out_sim2work %>% dplyr::group_by(N, effect, rho) %>%
 #n = 40
 sum(dbinom(32:40,40,.8))^3
 sum(dbinom(32:40,40,.7))^3
-# Both hitting threshold
-# Pproc(S) = 0.21
-# Pproc(SN) = 0.001
+# All hitting threshold
+# P_{G}(S) = 0.21
+# P_{G}(SN) = 0.001
+
 #n = 119
 sum(dbinom(96:119,119,.8))^3
 sum(dbinom(96:119,119,.7))^3
-# Both hitting threshold
-# Pproc(S) = 0.11
-# Pproc(SN) = < 0.0001
+# All hitting threshold
+# P_{G}(S) = 0.11
+# P_{G}(SN) = < 0.0001
 
 
 # **Optimize tolerance ------------------
 # This tolerance is chosen to achieve P_G(S) = 0.76 to match the HT
 # For N = 40
 sum(dbinom(29:40,40,.8))^3
-# Need to observe 28/40 success in all endpoints to have probability of all
-# being in P_FA(S) ~ 0.76 (0.7597857)
-# 28/40 = 0.70, so tolerance = 0.10
-# We would expect P_FA(SN) = 0.085
+# Need to observe 29/40 success in all endpoints to have probability of all
+# being in P_{G}(S) ~ 0.76 (0.7597857)
+# 29/40 = 0.725, so tolerance = 0.075
+# We would expect P_{G}(SN) = 0.085
 sum(dbinom(29:40,40,.7))^3
 
 # For N = 119
 sum(dbinom(89:119,119,.8))^3 # 0.815
 # Need to observe 89/119 success in all endpoints
 # 89/119 = 0.7478992, so tolerance = 0.0521008
-# We would expect P_FA(SN) = 0.003
+# We would expect P_{G}(SN) = 0.003
 sum(dbinom(89:119,119,.7))^3
 
-# With N = 40 and 3 endpoints the Hypothesis test is not able to achive
-# PG(S) = 0.80 because the probability of 3 binomials with p=0.8 all 
+# With N = 40 and 3 endpoints the Hypothesis test is not able to achieve
+# P_{G}(S) >= 0.80 because the probability of 3 binomials with p = 0.8 all 
 # having mean > 0.7 (i.e., not in the red zone is only ~0.75, so the
 # p-value for the amber zone is meaningless)
-# For the simulation, we'll let the p-value threshold be <= 1
+# For the simulation, we'll let the p-value threshold be = 1
 tol <- 0.0521008
 checktolerance3 <- matrix(NA,5000,2)
 for (f in 1:5000){
@@ -880,7 +857,6 @@ for (f in 1:5000){
   
 }
 colMeans(checktolerance2)
-
 
 # **Optimize Hypothesis test
 
@@ -909,7 +885,7 @@ for (f in 1:2000){
   
   # Expanded
   # This calculates if either the estimate is in the green zone,
-  # or the p-value is < 0.05, while the estimate is not in RED zone
+  # or the p-value is < alpha level, while the estimate is not in RED zone
   # Both endpoints need to be Go for us to proceed
   NotinREDs1 <- ifelse(mean(samp801) > 0.70,1,0)
   p801 <- ifelse(binom.test(sum(samp801), 40, p = 0.70, 
@@ -958,7 +934,6 @@ colMeans(checkHT2)
 # For N = 40, 3 endpoints the probability of all 3 endpoints
 # not being in the red zone is roughly 0.76 as discussed in the paper.
 
-
 set.seed(478)
 pcut <- 0.15
 checkHT2 <- matrix(NA,5000,4)
@@ -977,7 +952,7 @@ for (f in 1:5000){
   
   # Expanded
   # This calculates if either the estimate is in the green zone,
-  # or the p-value is < 0.05, while the estimate is not in RED zone
+  # or the p-value is < alpha level, while the estimate is not in RED zone
   # Both endpoints need to be Go for us to proceed
   
   NotinREDs1 <- ifelse(mean(samp801) > 0.70,1,0)
@@ -1028,12 +1003,10 @@ colMeans(checkHT2)
 # Expanded we get the tolerance
 # approach values (within simulation error) of 0.8178  and 0.01 
 
-
-
 # **Optimize Joint Feasibility Space ---------------------------
 # Need to optimize the cut point probability
 # (Note: This code takes ~ 15 minutes to run)
-a <- Sys.time()
+#a <- Sys.time()
 feas_ret <- c(0.70, 0.80)
 set.seed(632)
 FAsimopt3 <- matrix(NA,10000,2)
@@ -1047,19 +1020,15 @@ for (cond in 1:2){
     retentionE3 <- rbinom(n,1,ret)
     
     # Bootstrap
-    # Retention and rate are defined for Figure 1, which is the
-    # same example, this checks for exceeding the JFS boundary
+
     boots2o <- matrix(NA,1000,4)
     for (i in 1:1000){
-      
       resamprows <-sample(1:n,n,replace = TRUE) 
       boots2o[i,1] <- ifelse(mean(retentionE[resamprows])>=0.8,1,0) # recruitment rate
       boots2o[i,2] <- ifelse(mean(retentionE2[resamprows])>=0.8,1,0) # recruitment rate
       boots2o[i,3] <- ifelse(mean(retentionE3[resamprows])>=0.8,1,0) # recruitment rate
       boots2o[i,4] <- ifelse(boots2o[i,1] + boots2o[i,2] + boots2o[i,3] == 3,1,0) # recruitment rate
-      
     }
-    
     
     empty_rows <- which(rowSums(is.na(FAsimopt3)) == ncol(FAsimopt3))
     empt <- empty_rows[1]
@@ -1067,11 +1036,10 @@ for (cond in 1:2){
     FAsimopt3[empt,1] <- cond
     FAsimopt3[empt,2] <- mean(boots2o[,4])
     
-    
     print(empt)
   } # Simulations loop
 } # Condition loop
-Sys.time()-a
+#Sys.time()-a
 
 # Cut point to discriminate
 breaklist <- c(seq(0,1, 0.001))
@@ -1084,8 +1052,6 @@ picker[,1] <- seq(0,1,0.001)
 for (l in 1:1001){
   picker[l,2] <- length(FAsimopt_S[FAsimopt_S[,2]>=picker[l,1],2])/length(FAsimopt_S[,2])
   picker[l,3] <- length(FAsimopt_SN[FAsimopt_SN[,2]>=picker[l,1],2])/length(FAsimopt_SN[,2])
-  
-  
 }
 
 cutpoint <- picker[tail(which(picker[,2]>=0.80), n = 1),1]
@@ -1095,18 +1061,14 @@ picker[tail(which(picker[,2]>=0.80), n = 1),3]
 # Choose such that we have P_{G}(SN) = 0.09 to match the HT
 picker[20:25,] # 0.022
 
-
 # For N = 40, gives 
 # Gives cut point of 0.035
 # P_FA(S) = 0.8018 , P_FA(SN) = 0.0584
-# For comparison to tolerance and HT, a cut point of 0.047 gives P_FA(SN) = 0.
-# Also for comparison to HT we want Pg(S) = 0.7597858
+# For comparison to tolerance and HT, we want a cut point to give 
+# P_{G}(SN) = 0.09, which is 0.022
 
 # Re-run with N = 119 (Table 2 in HT paper) with same seed,
 # we get a cut point of 0.012
-# P_FA(S) = 0.866 , P_FA(SN) = 0.1938
-# For comparison to HT, 0.008
-
 
 # Simulation 3 code -----------------------------------
 set.seed(473)
@@ -1134,7 +1096,6 @@ for (nv in 1:2){
         sams2[,2] <- rbinom(nsim1,1, ret_effect  )
         sams2[,3] <- rbinom(nsim1,1, ret_effect  )
         
-      
         out_sim3[empt,1] <- nsim1
         out_sim3[empt,2] <- ret_effect
         out_sim3[empt,3] <- 0
@@ -1183,7 +1144,6 @@ for (nv in 1:2){
         # Expanded
         out_sim3[empt,7] <- ifelse(GO801 + GO802 + GO803 == 3,1,0)   
         
-        
         # JFS 
         
         boot3 <- matrix(NA,1000,1)
@@ -1194,10 +1154,11 @@ for (nv in 1:2){
                                  mean(sams2[rowsamp,3]) >= 0.8,1,0)
         }
         
-        #Straight
+        # This is the cut point for the comparison to the HT
         disc1 <- ifelse(nsim1 == 40,0.022, 0.012)
-        #Fair
+        # A different cut point
         disc2 <- ifelse(nsim1 == 40, 0.047, 0.004)
+        
         # JFS 80
         out_sim3[empt,8] <- ifelse( mean(boot3) >= disc1,1,0)   
         
@@ -1209,31 +1170,9 @@ for (nv in 1:2){
 } #n loop
 Sys.time()-at
 
-
-out_sim2work <- data.frame(out_sim3)
-colnames(out_sim2work) <- c("N", "effect", "rho", "Threshold", "Tolerance", "HTS", 
+out_sim3work <- data.frame(out_sim3)
+colnames(out_sim3work) <- c("N", "effect", "rho", "Threshold", "Tolerance", "HTS", 
                             "HTE", "FA", "FAfair")
 
-out_sim2work %>% dplyr::group_by(N, effect) %>% 
-  dplyr::summarise(across(everything(), list(mean))) ->tablesim3
-
-
-
-
-# R function for planning JFS
-# Enter in vector of go thresholds
-# enter in vector of dont thresholds
-# Enter in sample size
-
-# Code generates data under the conditions for each value
-# bootstraps to estimate prob of exceeding them
-# then calcualted the 80% value picker
-
-
-
-
-
-
-binom.test(31, 40, p = 0.70, 
-           alternative = "greater")$p.value
-
+out_sim3work %>% dplyr::group_by(N, effect) %>% 
+  dplyr::summarise(across(everything(), list(mean))) -> tablesim3
