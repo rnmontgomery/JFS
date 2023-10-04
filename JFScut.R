@@ -8,7 +8,6 @@
 
 # S: Value (or values) for the endpoints we should proceed for (e.g., 0.80 in paper)
 # SN: Value (or values) for endpoints we should not proceed for (e..g, 0.70 in paper)
-# direction: The direction of a good result (1 for greater, 0 for less). For example, with S = 0.80, SN = 0.70, we want to observe an effect >= 0.80, thus direction = 1.
 # parallel: Run the function in parallel
 # ncores: Number of cores to allocate if running parallel 
 # nsims: Number of simulations
@@ -18,24 +17,20 @@ library(foreach)
 library(doParallel)
 
 
-JFScut <- function(S, SN, N, direction, parallel = FALSE, ncores = 2, 
+JFScut <- function(S, SN, N, parallel = FALSE, ncores = 2, 
                    nsims = 1000, nboot = 1000, PgS = 0.80){
   
   if(length(S)!=length(SN)){
     stop("S and SN must be the same length.")
   }
   
-  if(length(S)!=length(direction)){
-    stop("Direction should match the length of S and SN.")
-  }
-  
-  
   if(max(S) > 1 | max(SN) > 1 | min(S) < 0 | min(SN) < 0){
     stop("Values in S and SN must be in [0,1], to calculate the JFS cutpoint for non-binomial data you can edit the function code.")
   }
   
   m <- length(S)
-  direction <- c(direction,direction)
+  direction <- rep(ifelse((S-SN) > 0, 1,0),2)
+  #direction <- c(direction,direction)
   Sdouble <- c(S,S)
   
   # Simulation
@@ -43,9 +38,7 @@ JFScut <- function(S, SN, N, direction, parallel = FALSE, ncores = 2,
   conditionprobs <- matrix(NA,nsims,2)
   
   if (parallel == FALSE){
-  a <- Sys.time()
   for (i in 1:nsims){
-    
     # Create fake data set
     sim_mat <- matrix(NA,N,m*2)
     for(l in 1:length(allcond))
@@ -79,7 +72,6 @@ JFScut <- function(S, SN, N, direction, parallel = FALSE, ncores = 2,
  
     res = foreach(i = 1:nsims, .combine = 'cbind') %dopar% {
       
-      
       # Create fake data set
       sim_mat <- matrix(NA,N,m*2)
       for(l in 1:length(allcond))
@@ -110,9 +102,7 @@ JFScut <- function(S, SN, N, direction, parallel = FALSE, ncores = 2,
     conditionprobs[,1] <- as.numeric(unlist(res[1,]))
     conditionprobs[,2] <- as.numeric(unlist(res[2,]))
     
-    
   }  
-  
   
   picker <- matrix(NA,nboot+1,3)
   picker[,1] <- seq(0,1,1/nboot)
@@ -131,18 +121,17 @@ JFScut <- function(S, SN, N, direction, parallel = FALSE, ncores = 2,
 
 }
 
-
 # Example:
 #This example, takes about 9 minutes to run.
 # It results in virtually the same cut point, P_{G}(S) and P_{G}(SN) as in the paper for 
 # one endpoints
 JFScut(S = c(0.8),
        SN = c(0.7),
-       direction = c(1),
        nsims = 10000,
        N = 40, 
        nboot = 1000, 
-       PgS = 0.84, parallel = FALSE)
+       PgS = 0.84, 
+       parallel = FALSE)
 
 # Cut point to match the result of the bottom right cell of Table 2 in the paper
 # N = 119, 3 endpoints, with S = (0.80, 0.80, 0.80), SN = (.70, 0.70, 0.70)
@@ -150,10 +139,9 @@ JFScut(S = c(0.8),
 
 JFScut(S = c(0.8, 0.80, 0.80),
        SN = c(0.70, 0.70, 0.7),
-       direction = c(1,1,1),
        nsims = 10000,
        N = 119, 
        nboot = 1000, 
-       PgS = 0.93, parallel = FALSE)
-
+       PgS = 0.93, 
+       parallel = FALSE)
 
