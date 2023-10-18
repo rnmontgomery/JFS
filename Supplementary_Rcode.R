@@ -1,4 +1,3 @@
-
 # Table of contents-------------------------------
 # 1) Figure 1
 # 2) Figure 2
@@ -69,7 +68,6 @@ for (i in 1:10000){
 }
 
 boot1 <- as.data.frame(boot1)
-
 
 # Figure 2  -------------------------
 
@@ -145,7 +143,6 @@ proceedopt2$Combination <- ifelse(proceedopt2$Combination == 1, "S", "SN")
 ggplot(proceedopt2,aes(x=probability, fill=Combination)) + geom_density(alpha=0.3) + theme_bw() + ylab("Density") +
   xlab("Probability of being in JFS") +scale_fill_manual(values=c( "#56B4E9","#ffa600"))
 
-
 # Get cut point:
 proceed_S <- proceedopt2[proceedopt2$Combination == "S",]
 proceed_SN <- proceedopt2[proceedopt2$Combination == "SN",]
@@ -199,14 +196,12 @@ sum(dbinom(30:40,40,.7))
  # We would expect P_FA(SN) = 0.047
  sum(dbinom(92:119,119,.7))
 
-
  # **Optimize Hyp. Test ----------------
  # Hyp. test procedure, 2 options:
  # 1) Simple: E >= GLL -> Go, otherwise Don't (not considering amend proceed)
  # this will have same operating char. as threshold
  # 2) Expanded: (E >= GLL) -> Go or (E >= RUL & pval < 0.05) -> Go
- 
- 
+
  threshold <- 0.8
  effect <- 0.8
  set.seed(229)
@@ -279,7 +274,6 @@ sum(dbinom(30:40,40,.7))
    Amber_minor70 <- ifelse(NotinRED70 + p70 >1,1,0)
    GO70 <- ifelse((checkHT1o[f,2]+Amber_minor70)>0 ,1,0)
    checkHT1o[f,4] <- GO70
-  
  }
  colMeans(checkHT1o)
  
@@ -659,7 +653,6 @@ sum(dbinom(30:40,40,.7))
  # we get a cut point of 0.049
  # P_FA(S) = 0.8006 , P_FA(SN) = 0.0034
  
- 
  # **Simulation 2 code ------------------
  # Note before running: This code takes ~22 minutes to run on a single core
  
@@ -695,6 +688,7 @@ sum(dbinom(30:40,40,.7))
          stop("Error: a probability is negative.")
        }
        
+
        for (p in 1:5000){
          
          # Generate correlated binomial data
@@ -788,12 +782,14 @@ sum(dbinom(30:40,40,.7))
  } #n loop
 #Sys.time()-at
  
+
 out_sim2work <- data.frame(out_sim2)
 colnames(out_sim2work) <- c("N", "effect", "rho", "Threshold", "Tolerance", "HTS", 
                             "HTE", "FA", "FAfair")
 
 out_sim2work %>% dplyr::group_by(N, effect, rho) %>% 
   dplyr::summarise(across(everything(), list(mean))) ->tablesim2
+
 
 # Simulation study 3 endpoints -------------------
 # All optimizations below assume independence
@@ -1003,6 +999,8 @@ colMeans(checkHT2)
 # Expanded we get the tolerance
 # approach values (within simulation error) of 0.8178  and 0.01 
 
+
+
 # **Optimize Joint Feasibility Space ---------------------------
 # Need to optimize the cut point probability
 # (Note: This code takes ~ 15 minutes to run)
@@ -1020,9 +1018,11 @@ for (cond in 1:2){
     retentionE3 <- rbinom(n,1,ret)
     
     # Bootstrap
-
+    # Retention and rate are defined for Figure 1, which is the
+    # same example, this checks for exceeding the JFS boundary
     boots2o <- matrix(NA,1000,4)
     for (i in 1:1000){
+      
       resamprows <-sample(1:n,n,replace = TRUE) 
       boots2o[i,1] <- ifelse(mean(retentionE[resamprows])>=0.8,1,0) # recruitment rate
       boots2o[i,2] <- ifelse(mean(retentionE2[resamprows])>=0.8,1,0) # recruitment rate
@@ -1035,7 +1035,7 @@ for (cond in 1:2){
     
     FAsimopt3[empt,1] <- cond
     FAsimopt3[empt,2] <- mean(boots2o[,4])
-    
+      
     print(empt)
   } # Simulations loop
 } # Condition loop
@@ -1060,6 +1060,8 @@ picker[tail(which(picker[,2]>=0.80), n = 1),3]
 
 # Choose such that we have P_{G}(SN) = 0.09 to match the HT
 picker[20:25,] # 0.022
+
+# Again check and see which cutpoint are used in the table
 
 # For N = 40, gives 
 # Gives cut point of 0.035
@@ -1106,7 +1108,6 @@ for (nv in 1:2){
         e3 <- ifelse(mean(sams2[,3])>=0.8,1,0)
         out_sim3[empt,4] <- ifelse(e1+e2+e3 == 3,1,0)
         
-        
         # Tolerance
         tol <- ifelse(nsim1 == 40, 0.075,0.0521008)
         rounder <- ifelse(nsim1 == 40, 3,7) # to avoid floating point issues
@@ -1145,7 +1146,6 @@ for (nv in 1:2){
         out_sim3[empt,7] <- ifelse(GO801 + GO802 + GO803 == 3,1,0)   
         
         # JFS 
-        
         boot3 <- matrix(NA,1000,1)
         for (l in 1:1000){
           rowsamp <- sample(1:nsim1, nsim1, replace = TRUE)
