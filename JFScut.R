@@ -1,24 +1,25 @@
-
-
 # R Function to estimate cut point for JFS
-# The function as written only works for Binomial data but
-# can be modified to include Normal data
+# The function as written only works for Binomial data 
 
 # Inputs:
 
 # S: Value (or values) for the endpoints we should proceed for (e.g., 0.80 in paper)
 # SN: Value (or values) for endpoints we should not proceed for (e..g, 0.70 in paper)
+# N: Sample size
+# nsims: Number of simulations (fake data sets)
+# nboot: Number of bootstrap replications
+# PgS: Probability of proceeding given S
 # parallel: Run the function in parallel
 # ncores: Number of cores to allocate if running parallel 
-# nsims: Number of simulations
+
 
 # Library foreach and doParallel required to run in parallel
 library(foreach)
 library(doParallel)
 
 
-JFScut <- function(S, SN, N, parallel = FALSE, ncores = 2, 
-                   nsims = 1000, nboot = 1000, PgS = 0.80){
+JFScut <- function(S, SN, N, PgS = 0.80, parallel = FALSE, ncores = 2, 
+                   nsims = 1000, nboot = 1000){
   
   if(length(S)!=length(SN)){
     stop("S and SN must be the same length.")
@@ -68,7 +69,8 @@ JFScut <- function(S, SN, N, parallel = FALSE, ncores = 2,
   }#nsims loop
   } else if (parallel == TRUE){
     
-    registerDoParallel(cores = ncores )
+    cl <- makeCluster(ncores)
+    registerDoParallel(cl )
  
     res = foreach(i = 1:nsims, .combine = 'cbind') %dopar% {
       
@@ -101,7 +103,7 @@ JFScut <- function(S, SN, N, parallel = FALSE, ncores = 2,
     
     conditionprobs[,1] <- as.numeric(unlist(res[1,]))
     conditionprobs[,2] <- as.numeric(unlist(res[2,]))
-    
+    stopCluster(cl)
   }  
   
   picker <- matrix(NA,nboot+1,3)
@@ -115,33 +117,37 @@ JFScut <- function(S, SN, N, parallel = FALSE, ncores = 2,
   PS <- picker[tail(which(picker[,2]>=PgS), n = 1),2]
   PSN <- picker[tail(which(picker[,2]>=PgS), n = 1),3]
   
+  if (cutpoint == 0){
+    print("Unable to identify a non-zero cut point.")
+  } else {
+  
   ret <- list(cutpoint, PS, PSN)
   names(ret) <- c("Cutpoint", "Pg(S)", "Pg(SN)")
   return(ret)  
-
+}
 }
 
+
 # Example:
-#This example, takes about 9 minutes to run.
+#T his example, takes about 9 minutes to run.
 # It results in virtually the same cut point, P_{G}(S) and P_{G}(SN) as in the paper for 
-# one endpoints
-JFScut(S = c(0.8),
-       SN = c(0.7),
-       nsims = 10000,
-       N = 40, 
-       nboot = 1000, 
-       PgS = 0.84, 
-       parallel = FALSE)
+# one endpoint
+# JFScut(S = c(0.8),
+#        SN = c(0.7),
+#        nsims = 10000,
+#        N = 40, 
+#        nboot = 1000, 
+#        PgS = 0.84, 
+#        parallel = FALSE)
 
 # Cut point to match the result of the bottom right cell of Table 2 in the paper
 # N = 119, 3 endpoints, with S = (0.80, 0.80, 0.80), SN = (.70, 0.70, 0.70)
 # and P_{G}(S) = 0.93
 
-JFScut(S = c(0.8, 0.80, 0.80),
-       SN = c(0.70, 0.70, 0.7),
-       nsims = 10000,
-       N = 119, 
-       nboot = 1000, 
-       PgS = 0.93, 
-       parallel = FALSE)
-
+# JFScut(S = c(0.8, 0.80, 0.80),
+#        SN = c(0.70, 0.70, 0.7),
+#        nsims = 10000,
+#        N = 119, 
+#        nboot = 1000, 
+#        PgS = 0.93, 
+#        parallel = FALSE)
