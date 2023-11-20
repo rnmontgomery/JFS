@@ -1,75 +1,73 @@
-
-
-
-
 # R function to estimate required Sample size
 
 # Inputs:
 
 # Requires JFScut function
 # n_max: Maximum feasible sample size
-# PgS: Probability of proceeding given S
-# PgSN: Probability of proceeding given SN
+# PpS: Probability of proceeding given S
+# PpSN: Probability of proceeding given SN
 # S: Value (or values) for the endpoints we should proceed for (e.g., 0.80 in paper)
 # SN: Value (or values) for endpoints we should not proceed for (e..g, 0.70 in paper)
 # maxit: Maximum number of iterations (increasing sample size by 1) to check if the original estimate fails
 # bootrep: Number of bootstrap replications for each simulated data set. This should equal the number of bootstrap replications that will be used for the analysis of the data.
+# nsimdata: Number of simulated data sets
 # paral: Run the function in parallel
 # ncor: Number of cores to allocate (if parallel = TRUE) 
 
 # Library dplyr required
 library(dplyr)
 
-JFS_N <- function(n_max, PgS, PgSN, S, SN, maxit = 5, bootrep = 1000, paral = FALSE,
+JFS_N <- function(n_max, PpS, PpSN, S, SN, maxit = 2, bootrep = 1000,
+                  paral = FALSE,
                   ncor){
   
-  initial_n <- function(n_max, PgS, PgSN, S, SN){
+  initial_n <- function(n_max, PpS, PpSN, S, SN){
     
     n <- 1:n_max
     direction <- ifelse((S-SN) > 0, 1, 0)
     
     if (direction == 1){
-      qs <- qbinom(PgS+0.02,n,S, lower.tail = FALSE)
+      qs <- qbinom(PpS+0.02,n,S, lower.tail = FALSE)
       options <-  1-pbinom(qs,n,S)
-      within <- options[between(options, PgS, 1)]
+      within <- options[between(options, PpS, 1)]
       pos_vs <- which(options %in% within)
       pos_ns <- n[pos_vs]
       qq <- qs[pos_vs]
       
-      qsn <- qbinom(PgSN,n,SN, lower.tail = FALSE)
+      qsn <- qbinom(PpSN,n,SN, lower.tail = FALSE)
       optionsn <-  1-pbinom(qsn,n,SN)
-      withinsn <- optionsn[between(optionsn, 0, PgSN)]
+      withinsn <- optionsn[between(optionsn, 0, PpSN)]
       pos_vsn <- which(optionsn %in% withinsn)
       pos_nsn <- n[pos_vsn]
       qqsn <- qsn[pos_vsn]
       
       # Finding matched quantile, or closest value to match as initial n
       dat <- data.frame(n, qs,qsn,options, optionsn)
-      dat$c1 <- ifelse(options >= PgS,0, PgS-options)
-      dat$c2 <- ifelse(optionsn <= PgSN,0, optionsn-PgSN)
+      dat$c1 <- ifelse(options >= PpS,0, PpS-options)
+      dat$c2 <- ifelse(optionsn <= PpSN,0, optionsn-PpSN)
       dat$c3 <- abs(qs-qsn)
       dat$err <- dat$c1 + dat$c2 + dat$c3
       
     }else if (direction == 0){ # direction = 1 
       
-      qs <- qbinom(PgS,n,S, lower.tail = TRUE)
+      qs <- qbinom(PpS,n,S, lower.tail = TRUE)
       options <-  pbinom(qs,n,S)
-      within <- options[between(options, PgS, 1)]
+      within <- options[between(options, PpS, 1)]
       pos_vs <- which(options %in% within)
       pos_ns <- n[pos_vs]
       qq <- qs[pos_vs]
       
-      qsn <- qbinom(PgSN,n,SN, lower.tail = TRUE)
+      qsn <- qbinom(PpSN,n,SN, lower.tail = TRUE)
       optionsn <-  pbinom(qsn,n,SN)
-      withinsn <- optionsn[between(optionsn, 0, PgSN)]
+      withinsn <- optionsn[between(optionsn, 0, PpSN)]
       pos_vsn <- which(optionsn %in% withinsn)
       pos_nsn <- n[pos_vsn]
       qqsn <- qsn[pos_vsn]
       
       # Finding matched quantile, or closest value to match as initial n
       dat <- data.frame(n, qs,qsn,options, optionsn)
-      dat$c1 <- ifelse(options >= PgS,0, PgS-options)
-      dat$c2 <- ifelse(optionsn <= PgSN,0, optionsn-PgSN)
+      dat$c1 <- ifelse(options >= PpS,0, PpS-options)
+      dat$c2 <- ifelse(optionsn <= PpSN,0, optionsn-PpSN)
       dat$c3 <- abs(qs-qsn)
       dat$err <- dat$c1 + dat$c2 + dat$c3
       
@@ -87,12 +85,12 @@ JFS_N <- function(n_max, PgS, PgSN, S, SN, maxit = 5, bootrep = 1000, paral = FA
   } # End of initial_n
   
   x <- NA
-    # First guess by simply taking PgS and PgSN to the 1/mth power
+    # First guess by simply taking PpS and PpSN to the 1/mth power
     # and using the function for one sample with smallest difference
     # between S and SN
     m <- length(S)
     diffm <- min(abs(S-SN))
-    x1 <- initial_n(n_max, PgS^(1/m), PgSN^(1/m), S[which(abs(S-SN) == diffm)[1]],
+    x1 <- initial_n(n_max, PpS^(1/m), PpSN^(1/m), S[which(abs(S-SN) == diffm)[1]],
                      SN[which(abs(S-SN) == diffm)[1]])
     n_init <- as.numeric(x1[1])
     n_range <- seq(n_init-25, n_init+25, by = 1)
@@ -106,7 +104,7 @@ JFS_N <- function(n_max, PgS, PgSN, S, SN, maxit = 5, bootrep = 1000, paral = FA
                     nsims = 400,
                     N = n_range[step], 
                     nboot = 200, 
-                    PgS, 
+                    PpS, 
                     parallel = FALSE)
       if (length(cut) == 1) { # Checks to make sure we have non-zero cut point
         estimated[step,1] <- NA
@@ -125,31 +123,35 @@ JFS_N <- function(n_max, PgS, PgSN, S, SN, maxit = 5, bootrep = 1000, paral = FA
     # Need to predict from LOESS curve
     
     predicted_loess <- predict(y, n_range)
-    n_predicted <- n_range[which(predicted_loess == predicted_loess[predicted_loess<=PgSN][1])]
+    n_predicted <- n_range[which(predicted_loess == predicted_loess[predicted_loess<=PpSN][1])]
     
     #Check
     print("Checking Result")
     check <- JFScut(S ,
                     SN ,
-                    nsims = 10000,
+                    nsims = nsimdata,
                     N = n_predicted, 
                     nboot = bootrep, 
-                    PgS , 
+                    PpS , 
                     parallel = paral,
                     ncores = ncor)
     
-    pass1 <- ifelse(as.numeric(check[2]) >= PgS, TRUE, FALSE)
-    pass2 <- ifelse(as.numeric(check[3]) <= PgSN, TRUE, FALSE)
+    pass1 <- ifelse(as.numeric(check[2]) >= PpS, TRUE, FALSE)
+    pass2 <- ifelse(as.numeric(check[3]) <= PpSN, TRUE, FALSE)
     
     passed <- ifelse(pass1 == TRUE & pass2 == TRUE, TRUE, FALSE)
     if(passed){
+      print("Passed = TRUE")
       # Add some ability to decrease sample size
-      go <- ifelse(abs(as.numeric(check[2]) - PgS) < 0.01 & abs(as.numeric(check[3]) - PgSN)
-                < 0.01, TRUE, FALSE )
+      go <- ifelse(abs(as.numeric(check[2]) - PpS) < 0.015 & abs(as.numeric(check[3]) - PpSN)
+                < 0.015, TRUE, FALSE )
       if (go){
+        print("Go = TRUE")
         x <- list(n_predicted, check[2], check[3])
-        names(x) <- c("N", "PgS", "PgSN")
+        names(x) <- c("N", "PpS", "PpSN")
       } else{
+        print("Go = FALSE")
+        
         iter <- 1
 
       repeat{
@@ -159,30 +161,35 @@ JFS_N <- function(n_max, PgS, PgSN, S, SN, maxit = 5, bootrep = 1000, paral = FA
           x <- list(n_predicted, check[2], check[3])
           break
         }
-        
+        print("Checkm, decreasing sample size")
         checkm <- JFScut(S ,
                         SN ,
-                        nsims = 10000,
+                        nsims = nsimdata,
                         N = n_predicted-iter, 
                         nboot = bootrep, 
-                        PgS , 
+                        PpS , 
                         parallel = paral,
                         ncores = ncor)
         
-        pass1 <- ifelse(as.numeric(checkm[2]) >= PgS, TRUE, FALSE)
-        pass2 <- ifelse(as.numeric(checkm[3]) <= PgSN, TRUE, FALSE)
+        pass1 <- ifelse(as.numeric(checkm[2]) >= PpS, TRUE, FALSE)
+        pass2 <- ifelse(as.numeric(checkm[3]) <= PpSN, TRUE, FALSE)
         
         passed <- ifelse(pass1 == TRUE & pass2 == TRUE, TRUE, FALSE)
         
         if(passed== TRUE){
-          go <- ifelse(abs(as.numeric(checkm[2]) - PgS) < 0.01 &
-                         abs(as.numeric(checkm[3]) - PgSN)< 0.01, TRUE, FALSE)
+          print("Decreased pass = TRUE")
+          go <- ifelse(abs(as.numeric(checkm[2]) - PpS) < 0.015 &
+                         abs(as.numeric(checkm[3]) - PpSN)< 0.015, TRUE, FALSE)
           if (go){
+            print("Decreased go = TRUE")
+            
             n_predicted <- n_predicted-iter
             x <- list(n_predicted, check[2], check[3])
-            names(x) <- c("N", "PgS", "PgSN")
+            names(x) <- c("N", "PpS", "PpSN")
             break
           } else {
+            print("Decreased go = False")
+            
             iter <- iter +1
           }
          
@@ -202,22 +209,22 @@ JFS_N <- function(n_max, PgS, PgSN, S, SN, maxit = 5, bootrep = 1000, paral = FA
         
         checkm <- JFScut(S ,
                          SN ,
-                         nsims = 10000,
+                         nsims = nsimdata,
                          N = n_predicted + iter, 
                          nboot = bootrep, 
-                         PgS, 
+                         PpS, 
                          parallel = paral, 
                          ncores = ncor )
         
-        pass1 <- ifelse(as.numeric(checkm[2]) >= PgS, TRUE, FALSE)
-        pass2 <- ifelse(as.numeric(checkm[3]) <= PgSN, TRUE, FALSE)
+        pass1 <- ifelse(as.numeric(checkm[2]) >= PpS, TRUE, FALSE)
+        pass2 <- ifelse(as.numeric(checkm[3]) <= PpSN, TRUE, FALSE)
         
         passed <- ifelse(pass1 == TRUE & pass2 == TRUE, TRUE, FALSE)
         
         if (passed){
           n_predicted <- n_predicted + iter
           x <- list(n_predicted, checkm[2], checkm[3])
-          names(x) <- c("N", "PgS", "PgSN")
+          names(x) <- c("N", "PpS", "PpSN")
           break
         } 
         if (iter == maxit){
@@ -242,20 +249,11 @@ JFS_N <- function(n_max, PgS, PgSN, S, SN, maxit = 5, bootrep = 1000, paral = FA
 # Example:
 
 # From Table 1 we would expect approximately N = 119
-# JFS_N(n_max = 200, 
-#       PgS = 0.8, 
-#       PgSN = 0.05,
-#       S = c(0.8),
-#       SN = c(0.7),
-#       maxit = 5)
-
-
-
-
-
-
-
-
-
-
-
+ # JFS_N(n_max = 200, 
+ #       PpS = 0.8, 
+ #       PpSN = 0.05,
+ #       S = c(0.8),
+ #       SN = c(0.7),
+ #       maxit = 5, 
+ #       nsimdata = 10000
+ #       bootrep = 10000)
