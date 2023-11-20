@@ -1,15 +1,11 @@
-# Table of contents-------------------------------
-# 1) Figure 1
-# 2) Figure 2
-# 3) Figure 3
-# 4) Simulation study 1 endpoint
-# 5) Simulation study 2 endpoints
---------------------------------------------------
-# Required packages
+
+# Required packages -----------------
   
 library(dplyr)
 library(ggplot2)
 library(ggarrange)
+
+# JFS_N and JFScut functions are required
 
 # Figure 1--------------------------
 # *FIG 1 A -------------------------
@@ -69,6 +65,7 @@ for (i in 1:10000){
 
 boot1 <- as.data.frame(boot1)
 
+
 # Figure 2  -------------------------
 
 addcords <- c(NA, 7, 1)
@@ -92,8 +89,11 @@ ggplot(data = fig1, aes(x = retention, y = rate))+
 
 n <- 40
 dyadn <- n/2
-feas_rate <- c(2.91, 2.5)
-feas_ret <- c(0.8, 0.725)
+# feas_rate <- c(2.91, 2.5)
+# feas_ret <- c(0.8, 0.725)
+
+ feas_rate <- c(2.91, 2.19)
+ feas_ret <- c(0.8, 0.75)
 
 set.seed(711)
 proceedopt <- matrix(NA,20000,2)
@@ -132,7 +132,6 @@ for (j in 1:10000){
   
   proceedopt[empt,1] <- cond
   proceedopt[empt,2] <- mean(boot2[,3])
-  
 } # Simulations loop
 } # Condition loop
 
@@ -140,8 +139,14 @@ proceedopt2 <- data.frame(proceedopt)
 colnames(proceedopt2) <- c("Combination", "probability")
 proceedopt2$Combination <- ifelse(proceedopt2$Combination == 1, "S", "SN")
 
+ggsave("G:\\Papers\\JFS\\Fig32.tiff", units="in", width=6,height=4, dpi=300)
+
 ggplot(proceedopt2,aes(x=probability, fill=Combination)) + geom_density(alpha=0.3) + theme_bw() + ylab("Density") +
   xlab("Probability of being in JFS") +scale_fill_manual(values=c( "#56B4E9","#ffa600"))
+dev.off()
+
+
+
 
 # Get cut point:
 proceed_S <- proceedopt2[proceedopt2$Combination == "S",]
@@ -154,15 +159,27 @@ for (l in 1:1001){
   picker[l,3] <- length(proceed_SN[proceed_SN[,2]>=picker[l,1],2])/length(proceed_SN[,2])
 }
 
+
+
 # Gives cut point to hit P_G(S) = 0.80
 cutpoint <- picker[tail(which(picker[,2]>=0.80), n = 1),1]
 
-length(proceed_S[proceed_S[,2]>= 0.15,2])/length(proceed_S[,2])
-length(proceed_SN[proceed_SN[,2]>= 0.15,2])/length(proceed_SN[,2])
+length(proceed_S[proceed_S[,2]>= cutpoint,2])/length(proceed_S[,2])
+length(proceed_SN[proceed_SN[,2]>= cutpoint,2])/length(proceed_SN[,2])
 
 # Cut points for largest difference P_G(S) and P_G(SN)
 picker[,4] <- picker[,2]-picker[,3]
 picker[which(picker[,4] == max(picker[,4])),c(1,2,3)]
+
+
+mean(proceed_S[,2])
+sd(proceed_S[,2])
+
+mean(proceed_SN[,2])
+sd(proceed_SN[,2])
+
+quantile(proceed_SN[,2])
+quantile(proceed_S[,2])
 
 
 # Simulation study 1 endpoint ---------------
@@ -196,12 +213,14 @@ sum(dbinom(30:40,40,.7))
  # We would expect P_FA(SN) = 0.047
  sum(dbinom(92:119,119,.7))
 
+
  # **Optimize Hyp. Test ----------------
  # Hyp. test procedure, 2 options:
  # 1) Simple: E >= GLL -> Go, otherwise Don't (not considering amend proceed)
  # this will have same operating char. as threshold
  # 2) Expanded: (E >= GLL) -> Go or (E >= RUL & pval < 0.05) -> Go
-
+ 
+ 
  threshold <- 0.8
  effect <- 0.8
  set.seed(229)
@@ -274,6 +293,7 @@ sum(dbinom(30:40,40,.7))
    Amber_minor70 <- ifelse(NotinRED70 + p70 >1,1,0)
    GO70 <- ifelse((checkHT1o[f,2]+Amber_minor70)>0 ,1,0)
    checkHT1o[f,4] <- GO70
+  
  }
  colMeans(checkHT1o)
  
@@ -653,6 +673,8 @@ sum(dbinom(30:40,40,.7))
  # we get a cut point of 0.049
  # P_FA(S) = 0.8006 , P_FA(SN) = 0.0034
  
+ 
+ 
  # **Simulation 2 code ------------------
  # Note before running: This code takes ~22 minutes to run on a single core
  
@@ -854,6 +876,7 @@ for (f in 1:5000){
 }
 colMeans(checktolerance2)
 
+
 # **Optimize Hypothesis test
 
 # **Optimize Hyp. Test ----------------
@@ -929,6 +952,7 @@ colMeans(checkHT2)
 # p-value threshold of 1.0
 # For N = 40, 3 endpoints the probability of all 3 endpoints
 # not being in the red zone is roughly 0.76 as discussed in the paper.
+
 
 set.seed(478)
 pcut <- 0.15
@@ -1028,14 +1052,17 @@ for (cond in 1:2){
       boots2o[i,2] <- ifelse(mean(retentionE2[resamprows])>=0.8,1,0) # recruitment rate
       boots2o[i,3] <- ifelse(mean(retentionE3[resamprows])>=0.8,1,0) # recruitment rate
       boots2o[i,4] <- ifelse(boots2o[i,1] + boots2o[i,2] + boots2o[i,3] == 3,1,0) # recruitment rate
+      
     }
+    
     
     empty_rows <- which(rowSums(is.na(FAsimopt3)) == ncol(FAsimopt3))
     empt <- empty_rows[1]
     
     FAsimopt3[empt,1] <- cond
     FAsimopt3[empt,2] <- mean(boots2o[,4])
-      
+    
+    
     print(empt)
   } # Simulations loop
 } # Condition loop
@@ -1052,6 +1079,8 @@ picker[,1] <- seq(0,1,0.001)
 for (l in 1:1001){
   picker[l,2] <- length(FAsimopt_S[FAsimopt_S[,2]>=picker[l,1],2])/length(FAsimopt_S[,2])
   picker[l,3] <- length(FAsimopt_SN[FAsimopt_SN[,2]>=picker[l,1],2])/length(FAsimopt_SN[,2])
+  
+  
 }
 
 cutpoint <- picker[tail(which(picker[,2]>=0.80), n = 1),1]
@@ -1060,6 +1089,7 @@ picker[tail(which(picker[,2]>=0.80), n = 1),3]
 
 # Choose such that we have P_{G}(SN) = 0.09 to match the HT
 picker[20:25,] # 0.022
+
 
 # Again check and see which cutpoint are used in the table
 
@@ -1071,6 +1101,7 @@ picker[20:25,] # 0.022
 
 # Re-run with N = 119 (Table 2 in HT paper) with same seed,
 # we get a cut point of 0.012
+
 
 # Simulation 3 code -----------------------------------
 set.seed(473)
@@ -1098,6 +1129,7 @@ for (nv in 1:2){
         sams2[,2] <- rbinom(nsim1,1, ret_effect  )
         sams2[,3] <- rbinom(nsim1,1, ret_effect  )
         
+      
         out_sim3[empt,1] <- nsim1
         out_sim3[empt,2] <- ret_effect
         out_sim3[empt,3] <- 0
@@ -1107,6 +1139,7 @@ for (nv in 1:2){
         e2 <- ifelse(mean(sams2[,2])>=0.8,1,0)
         e3 <- ifelse(mean(sams2[,3])>=0.8,1,0)
         out_sim3[empt,4] <- ifelse(e1+e2+e3 == 3,1,0)
+        
         
         # Tolerance
         tol <- ifelse(nsim1 == 40, 0.075,0.0521008)
@@ -1145,7 +1178,9 @@ for (nv in 1:2){
         # Expanded
         out_sim3[empt,7] <- ifelse(GO801 + GO802 + GO803 == 3,1,0)   
         
+        
         # JFS 
+        
         boot3 <- matrix(NA,1000,1)
         for (l in 1:1000){
           rowsamp <- sample(1:nsim1, nsim1, replace = TRUE)
@@ -1170,9 +1205,232 @@ for (nv in 1:2){
 } #n loop
 Sys.time()-at
 
+
 out_sim3work <- data.frame(out_sim3)
 colnames(out_sim3work) <- c("N", "effect", "rho", "Threshold", "Tolerance", "HTS", 
                             "HTE", "FA", "FAfair")
 
 out_sim3work %>% dplyr::group_by(N, effect) %>% 
   dplyr::summarise(across(everything(), list(mean))) -> tablesim3
+
+# Efficiency comparison simulations -------------
+# The code takes ~ 2 days to run for each # of endpoints, in total ~ 6 days.
+
+# *One Endpoint Estimates -----------------------
+# Code uses JFS_N to estimate sample size for each S and SN combination
+# in Table 3 and then checks with JFScut
+
+rm(list = setdiff(ls(), lsf.str())) # Remove everything except functions
+library(dplyr)
+
+dat <- read.csv("G:\\Papers\\JFS\\Submissions\\Submitted code\\Exact_gpower_done.csv", header = TRUE)
+HT_1 <- matrix(NA,48,6)
+for (r in 1:48){
+  
+  HT_1[r,1] <- dat[r,1] # SN
+  HT_1[r,2] <- dat[r,2] # S
+  HT_1[r,3] <- dat[r,3] # N for HT, column 3 for 1, column 5 for 2, column 7 for 3
+  
+  jfs <-  JFS_N(n_max = 200, 
+                PpS = 0.8, 
+                PpSN = 0.05,
+                S = rep(dat[r,2]*0.01,1),
+                SN = rep(dat[r,1]*0.01,1),
+                maxit = 5,
+                paral = TRUE, 
+                ncor = 4, 
+                nsimdata = 10000,
+                bootrep = 5000)
+  if (length(jfs)>1){
+    HT_1[r,4] <- as.numeric(jfs$N)
+    HT_1[r,5] <- as.numeric(jfs$PpS)
+    HT_1[r,6] <- as.numeric(jfs$PpSN)
+    
+  } else{
+    HT_1[r,4] <- NA
+    HT_1[r,5] <- NA
+    HT_1[r,6] <- NA
+  }
+  
+  print(r)
+}
+
+# Save the estimated data set
+# write.csv(HT_1,"G:\\Papers\\JFS\\Submissions\\Submitted code\\Estimate_one.csv" )
+
+# *Checking one endpoint -------------------------
+
+endpoints_1 <- read.csv("G:\\Papers\\JFS\\Submissions\\Submitted code\\Estimate_one.csv", header = TRUE)
+
+end1_check <- matrix(NA,48,3)
+for (l in 1:48){
+  SNv <- 0.01*endpoints_1[l,2]
+  Sv <- 0.01*endpoints_1[l,3]
+  Nv <- endpoints_1[l,5]
+  
+  jfs <- JFScut(S = Sv ,
+                SN = SNv ,
+                nsims = 10000,
+                N = Nv, 
+                nboot = 10000, 
+                PpS = 0.80, 
+                parallel = TRUE, ncores = 4)
+  
+  end1_check[l,1] <- Nv
+  end1_check[l,2] <- jfs[[1]]
+  end1_check[l,3] <- jfs[[2]]
+  print(l)
+}
+
+# Any values that did not have P(P|SN) < 0.05 were re-ran iteratively (+1 N)
+# until P(P|SN) <= 0.05
+
+# Save the checked data set
+# write.csv(end1_check,"G:\\Papers\\JFS\\Submissions\\Submitted code\\endpoint1_check.csv") 
+
+
+# *Two endpoint estimates --------------------------
+
+rm(list = setdiff(ls(), lsf.str())) # Remove everything except functions
+library(dplyr)
+
+dat <- read.csv("G:\\Papers\\JFS\\Submissions\\Submitted code\\Exact_gpower_done.csv", header = TRUE)
+a <- Sys.time()
+HT_2 <- matrix(NA,48,7)
+for (r in 1:48){
+  
+  HT_2[r,1] <- dat[r,1] # SN
+  HT_2[r,2] <- dat[r,2] # S
+  HT_2[r,3] <- dat[r,5] # N for HT, column 3 for 1, column 5 for 2, column 7 for 3
+  
+  jfs <-  JFS_N(n_max = 300, 
+                PpS = 0.8, 
+                PpSN = 0.05,
+                S = rep(dat[r,2]*0.01,2),
+                SN = rep(dat[r,1]*0.01,2),
+                maxit = 5,
+                paral = TRUE, 
+                ncor = 4, 
+                nsimdata = 10000,
+                bootrep = 5000)
+  if (length(jfs)>1){
+    HT_2[r,4] <- as.numeric(jfs$N)
+    HT_2[r,5] <- as.numeric(jfs$PpS)
+    HT_2[r,6] <- as.numeric(jfs$PpSN)
+    
+  } else{
+    HT_2[r,4] <- NA
+    HT_2[r,5] <- NA
+    HT_2[r,6] <- NA
+  }
+  
+  print(r)
+}
+Sys.time()-a
+
+# Save the estimated data set
+#write.csv(HT_2,"G:\\Papers\\JFS\\Submissions\\Submitted code\\Estimate_two.csv" )
+
+
+# *Checking two endpoints ------------------
+end2_check <- matrix(NA,48,3)
+endpoints_2 <- read.csv("G:\\Papers\\JFS\\Submissions\\Submitted code\\Estimate_two.csv", header = TRUE)
+for (m in 1:48){
+  
+  SN <- rep(endpoints_2[m,2]*0.01,2)
+  S <- rep(endpoints_2[m,3]*0.01,2)
+  N <- ceiling(endpoints_2[m,5]*1.0)
+  out <- JFScut(S,
+                SN,
+                N,
+                PpS = 0.80,
+                parallel = TRUE,
+                ncores = 4, 
+                nsims = 10000,
+                nboot = 10000)
+  
+  end2_check[m,1] <- N
+  end2_check[m,2] <- out[[2]]
+  end2_check[m,3] <- out[[3]]
+  print(m)
+}
+
+# Save the checked data set
+#write.csv(end2_check,"G:\\Papers\\JFS\\Submissions\\Submitted code\\endpoint2_check.csv") 
+
+# Any values  that did not have P(P|SN) < 0.05 were re-ran iteratively (+1 N)
+# until P(P|SN) <= 0.05
+
+
+# *Three endpoint estimates ------------
+
+rm(list = setdiff(ls(), lsf.str())) # Remove everything except functions 
+library(dplyr)
+dat <- read.csv("G:\\Papers\\JFS\\JFS\\Exact_gpower_done.csv", header = TRUE)
+a <- Sys.time()
+HT_3 <- matrix(NA,48,7)
+for (r in 15:48){
+  
+  HT_3[r,1] <- dat[r,1] # SN
+  HT_3[r,2] <- dat[r,2] # S
+  HT_3[r,3] <- dat[r,7] # N for HT, column 3 for 1 endpoint, column 5 for 2, column 7 for 3
+  
+  jfs <-  JFS_N(n_max = HT_3[r,3]*2, 
+                PpS = 0.8, 
+                PpSN = 0.05,
+                S = rep(dat[r,2]*0.01,3),
+                SN = rep(dat[r,1]*0.01,3),
+                maxit = 5,
+                paral = TRUE, 
+                ncor = 4, 
+                nsimdata = 10000,
+                bootrep = 5000)
+  
+  if (length(jfs)>1){
+    HT_3[r,4] <- as.numeric(jfs[[1]])
+    HT_3[r,5] <- as.numeric(jfs[[2]])
+    HT_3[r,6] <- as.numeric(jfs[[3]])
+    
+  } else{
+    HT_3[r,4] <- NA
+    HT_3[r,5] <- NA
+    HT_3[r,6] <- NA
+  }
+  
+  print(r)
+}
+Sys.time()-a
+
+# Save the estimated data set
+write.csv(HT_3,"G:\\Papers\\JFS\\Submissions\\Submitted code\\Estimate_three.csv" )
+
+
+
+# *Checking three endpoints ------------------
+end3_check <- matrix(NA,48,3)
+endpoints_3 <- read.csv("G:\\Papers\\JFS\\Submissions\\Submitted code\\Estimate_three.csv", header = TRUE)
+for (m in 1:48){
+  
+  SN <- rep(endpoints_3[m,2]*0.01,3)
+  S <- rep(endpoints_3[m,3]*0.01,3)
+  N <- ceiling(endpoints_3[m,5]*1.0)
+  out <- JFScut(S, 
+                SN, 
+                N,
+                PpS = 0.80,
+                parallel = TRUE,
+                ncores = 4, 
+                nsims = 10000, 
+                nboot = 10000)
+  
+  end3_check[m,1] <- N
+  end3_check[m,2] <- out[[2]]
+  end3_check[m,3] <- out[[3]]
+  print(m)
+}
+
+write.csv(end3_check,"G:\\Papers\\JFS\\Submissions\\Submitted code\\endpoint3_check.csv") 
+
+# Any values that did not have P(P|SN) < 0.05 were re-ran iteratively (+1 N)
+# until P(P|SN) <= 0.05
+
