@@ -18,7 +18,7 @@ JFScut(F =  c(5.75, 0.8),
        alpha_rec = 0.01,
        beta_rec = 0.01,
        recwindow = 36)
-PpF will always be met, so we focus on PpI. With N = 200, it was 0.003
+PpF will always be met, so we focus on PpI. With N = 200, it was 0.003.
 
 2) Decrease sample, size half it, N = 100
 
@@ -35,7 +35,7 @@ JFScut(F =  c(5.75, 0.8),
        beta_rec = 0.01,
        recwindow = 36)
 
- With N = 200, PpI = 0.054, slightly increase sample size
+ With N = 200, PpI = 0.054, slightly increase sample size.
 
  3) Increase sample, N = 105
  
@@ -52,5 +52,5 @@ JFScut(F =  c(5.75, 0.8),
         beta_rec = 0.01,
         recwindow = 36)
  
- With N = 105, PpI = 0.045, so approximately N = 105 participants are needed
- This can be confirmed with a larger run (e.g., nsims = 10000)
+ With N = 105, PpI = 0.045, so approximately N = 105 participants are needed.
+ This can be confirmed with a larger run (e.g., nsims = 10000).
