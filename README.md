@@ -1,5 +1,5 @@
 # JFS
-Contains code used in the paper "Jointly assessing multiple endpoints in pilot and feasibility studies". This repository contains R code to reproduce all figures and simulations (Supplementary_Rcode.R) as well as functions to propsectively define a cut point using the JFS method (JFScut.R) and code (JFS_N.R) to approximate the required sample size to achieve a specified ![equation](https://latex.codecogs.com/svg.image?&space;P_{G}(S)) and ![equation](https://latex.codecogs.com/svg.image?&space;P_{G}(SN)).
+Contains code used in the paper "Jointly assessing multiple endpoints in pilot and feasibility studies". This repository contains R code to reproduce all figures and simulations (Supplementary_Rcode.R) as well as functions to propsectively define a cut point using the JFS method (JFScut.R) and code (JFS_N.R) to approximate the required sample size to achieve a specified $P(P \mid F)$ and $P(P \mid I)$
 
 Here is a brief example to use the JFScut function to estimate the required sample size for the motivating example, which includes recruitment rate, to achieve  $P(P \mid F) = 0.80$ and $P(P \mid I) = 0.05$.
 
