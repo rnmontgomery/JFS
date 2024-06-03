@@ -1,5 +1,5 @@
 # JFS
-Contains code used in the paper "Jointly assessing multiple endpoints in pilot and feasibility studies". This repository contains R code to reproduce all figures and simulations (Supplementary_Rcode.R) as well as functions to propsectively define a cut point using the JFS method (JFScut.R) and code (JFS_N.R) to approximate the required sample size to achieve a specified $P(P \mid F)$ and $P(P \mid I)$
+Contains code used in the paper "Jointly assessing multiple endpoints in pilot and feasibility studies". This repository contains R functions to propsectively define a cut point using the JFS method (JFScut.R) and code (JFS_N.R) to approximate the required sample size to achieve a specified $P(P \mid F)$ and $P(P \mid I)$
 
 Here is a brief example to use the JFScut function to estimate the required sample size for the motivating example, which includes recruitment rate, to achieve  $P(P \mid F) = 0.80$ and $P(P \mid I) = 0.05$.
 
@@ -18,9 +18,10 @@ JFScut(F =  c(5.75, 0.8),
        alpha_rec = 0.01,
        beta_rec = 0.01,
        recwindow = 36)
+       
 PpF will always be met, so we focus on PpI. With N = 200, it was 0.003.
 
-2) Decrease sample, size half it, N = 100
+2) OCs were better than reqquired, decrease sample to N = 100
 
 JFScut(F =  c(5.75, 0.8),
        I = c(4.44, 0.775),
@@ -37,7 +38,7 @@ JFScut(F =  c(5.75, 0.8),
 
  With N = 200, PpI = 0.054, slightly increase sample size.
 
- 3) Increase sample, N = 105
+ 3) OCs were slighlty worse than required, increase sample, N = 105
  
  JFScut(F =  c(5.75, 0.8),
         I = c(4.44, 0.775),
