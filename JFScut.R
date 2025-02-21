@@ -61,12 +61,12 @@ JFScut <- function(F, I, N, PpF = 0.80,
     for (i in 1:nsims){
       # Create fake data set
       sim_mat <- matrix(NA,N,m*2)
-      for(l in 1:length(allcond))
+      for(l in 1:length(allcond)) # Generate simulated data for F and I
       {
         sim_mat[,l] <- rbinom(N,1, allcond[l])
       }
       
-      marginalposts <- matrix(NA,length(F),1)
+      marginalposts <- matrix(NA,length(F),1) # Calculated the posterior probability of meeting F for each endpoint when F is true
       for (l in 1:length(F)){
         
         if (direction[l] == 1){
@@ -76,8 +76,10 @@ JFScut <- function(F, I, N, PpF = 0.80,
         }
       }
       
-      conditionprobs[i,1] <-prod(marginalposts)
-      marginalposts2 <- matrix(NA,length(I),1)
+      conditionprobs[i,1] <-prod(marginalposts) 
+
+      
+      marginalposts2 <- matrix(NA,length(I),1)# Calculates the posterior prob. of meeting F condition when I is true
       for (l in (length(F)+1):(length(F)+ length(I))){
         set <- (length(F)+1):(length(F)+ length(I))
         Il <- which(set == l)
