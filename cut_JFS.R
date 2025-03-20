@@ -30,12 +30,16 @@ cut_jfs <- function(feasible_values, infeasible_values, sample_size, PpF = 0.80,
         stop("feasible_values and infeasible_values must be the same length.")
     }
     # able to study multiple params at once
-    if (length(feasible_values) > length(prior_alpha)) {
+    if (length(prior_alpha) == 1) {
         prior_alpha <- rep(prior_alpha, length(feasible_values))
+    } else if (length(prior_alpha) != length(feasible_values)) {
+        stop("prior_alpha must be either a scalar or the same length as feasible_values.")
     }
-    # makes a scalar a vector for prior_alpha and prior_beta
-    if (length(feasible_values) > length(prior_beta)) {
+    # makes a scalar a vector for prior_alpha
+    if (length(prior_beta) == 1) {
         prior_beta <- rep(prior_beta, length(feasible_values))
+    } else if (length(prior_beta) != length(feasible_values)) {
+        stop("prior_beta must be either a scalar or the same length as feasible_values.")
     }
     
     # only for proportions, only prior_beta-binomial
@@ -261,17 +265,17 @@ cut_jfs(
 
 # Motivating example from paper matches with cutpoint and probabilities
 # ARE THE ARGUMENTS FOR feasible_values AND infeasible_values CORRECT? 
-cut_jfs(
-    feasible_values =  c(5.75, 0.8), 
-    infeasible_values = c(4.44, 0.775),
-    num_simulations = 1000,
-    sample_size = 20,
-    PpF = 0.80,
-    preliminary_sample_size = 165,
-    include_recruitment = TRUE,
-    prior_alpha = c(1),
-    prior_beta = c(1),
-    alpha_rec = 0.01,
-    beta_rec = 0.01,
-    recruitment_window = 36
-)
+# cut_jfs(
+#     feasible_values =  c(5.75, 0.8), 
+#     infeasible_values = c(4.44, 0.775),
+#     num_simulations = 1000,
+#     sample_size = 20,
+#     PpF = 0.80,
+#     preliminary_sample_size = 165,
+#     include_recruitment = TRUE,
+#     prior_alpha = c(1),
+#     prior_beta = c(1),
+#     alpha_rec = 0.01,
+#     beta_rec = 0.01,
+#     recruitment_window = 36
+# )
