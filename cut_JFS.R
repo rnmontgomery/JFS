@@ -19,49 +19,39 @@
 # RETURNS
 
 
-cut_jfs = function(feasible_values, infeasible_values, sample_size, ppf = 0.80, num_simulations = 1000, prior_alpha = c(1), prior_beta = c(1),include_recruitment = FALSE,
-                   recruitment_window = NULL, preliminary_sample_size = NULL,alpha_rec = NULL,beta_rec = NULL) {
+cut_jfs = function(feasible_values, infeasible_values, sample_size, ppf = 0.80, num_simulations = 1000, prior_alpha = c(1), prior_beta = c(1),
+                   include_recruitment = FALSE, recruitment_window = NULL, preliminary_sample_size = NULL,alpha_rec = NULL,beta_rec = NULL) {
     # only able to analyses recruitment if retention is used
-    if (max(feasible_values) > 1 & length(feasible_values) == 1) {
-        stop("Recruitment needs to be analyses with retention")
-    }
+    if (max(feasible_values) > 1 & n == 1) stop("Recruitment needs to be analyses with retention")
     # makes a vector of equal length to feasible_values
-    if (length(feasible_values) != length(infeasible_values)) {
-        stop("feasible_values and infeasible_values must be the same length.")
-    }
-    # able to study multiple params at once
-    if (length(prior_alpha) == 1) {
-        prior_alpha = rep(prior_alpha, length(feasible_values))
-    } else if (length(prior_alpha) != length(feasible_values)) {
-        stop("prior_alpha must be either a scalar or the same length as feasible_values.")
-    }
-    # makes a scalar a vector for prior_alpha
-    if (length(prior_beta) == 1) {
-        prior_beta = rep(prior_beta, length(feasible_values))
-    } else if (length(prior_beta) != length(feasible_values)) {
-        stop("prior_beta must be either a scalar or the same length as feasible_values.")
+    if (length(feasible_values) != length(infeasible_values))stop("feasible_values and infeasible_values must be the same length.")
+    n = length(feasible_values)
+    # prior_alpha & prior_beta can only be scalars or vector length n
+    if (length(prior_alpha) == 1) prior_alpha = rep(prior_alpha, n)
+    if (length(prior_beta) == 1) prior_beta = rep(prior_beta, n)
+    if (length(prior_alpha) != n || length(prior_beta) != n){
+        stop("prior_alpha and prior_beta must each be either a scalar or the same length as feasible_values.")
     }
     # error handling that feasible_values
     if (max(feasible_values) > 1 | max(infeasible_values) > 1 | min(feasible_values) < 0 | min(infeasible_values) < 0) {
-        stop("Values in feasible_values and infeasible_values must be in [0,1], to calculate the JFS cutpoint for non-binomial data you can edit the function code.")
+        stop("Values in feasible_values and infeasible_values must be in [0,1], 
+             to calculate the JFS cutpoint for non-binomial data you can edit the function code.")
     }
-    # only for proportions, only prior_beta-binomial
+   
     if (include_recruitment == FALSE) {
         direction = ifelse((feasible_values - infeasible_values) > 0, 1, 0)  # 0 if lower is better and 1 if higher is better
-        # Simulation
+        # Simulation of fake data
         feasible_conditional_probs = numeric(num_simulations)
         infeasible_conditional_probs = numeric(num_simulations)
-        for (i in 1:num_simulations) {
-            # Create fake data set
+        for (i in 1:num_simulations) { 
             sim_feasible = rbinom(sample_size, 1, feasible_values)
             sim_infeasible = rbinom(sample_size, 1, infeasible_values)
-            marginal_posts = numeric(length(feasible_values))
-            marginal_posts_2 = numeric(length(infeasible_values))
+            marginal_posts = numeric(n)
+            marginal_posts_2 = numeric(n)
             
             for (j in seq_along(feasible_values)) {
                 post_feasible = pbeta(feasible_values[j], prior_alpha[j] + sum(sim_feasible), prior_beta[j] + sample_size - sum(sim_feasible))
                 post_infeasible = pbeta(infeasible_values[j], prior_alpha[j] + sum(sim_infeasible), prior_beta[j] + sample_size - sum(sim_infeasible))
-                
                 if (direction[j] == 1) {
                     marginal_posts[j] = 1 - post_feasible
                     marginal_posts_2[j] = 1 - post_infeasible
@@ -70,7 +60,7 @@ cut_jfs = function(feasible_values, infeasible_values, sample_size, ppf = 0.80, 
                     marginal_posts_2[j] = post_infeasible
                 }
             }
-
+            
             feasible_conditional_probs[i] = prod(marginal_posts)
             infeasible_conditional_probs[i] = prod(marginal_posts_2)
         }
@@ -87,11 +77,10 @@ cut_jfs = function(feasible_values, infeasible_values, sample_size, ppf = 0.80, 
     }
 
     cut_index = tail(which(picker_feasible >= ppf), n = 1)
-    cutpoint = picker_values[cut_index]
-    PF = mean(feasible_conditional_probs >= cutpoint)
-    PI = mean(infeasible_conditional_probs >= cutpoint)
-
-    if (cutpoint == 0) return("Unable to identify a non-zero cut point.") else return(list("Cut point" = cutpoint, "P(P|F)" = PF, "P(P|I)" = PI))
+    cut_point = picker_values[cut_index]
+    pf = mean(feasible_conditional_probs >= cutpoint)
+    pi = mean(infeasible_conditional_probs >= cutpoint)
+    if (cutpoint == 0) return("Unable to identify a non-zero cut point.") else return(list("Cut point" = cut_point, "P(P|F)" = pf, "P(P|I)" = pi))
 }
 
 
@@ -134,7 +123,7 @@ cut_jfs(
 #     if (feasible_values[1] <= 1) {
 #         warning("The include_recruitment rate is <= 1, confirm this is not another binomial feasibility parameter.")
 #     }
-#     if (max(feasible_values[2:length(feasible_values)]) > 1) {
+#     if (max(feasible_values[2:n]) > 1) {
 #         stop("Values in feasible_values and infeasible_values must be in [0,1], to calculate the JFS cutpoint for non-binomial data you can edit the function code.")
 #     }
 #     
@@ -144,9 +133,9 @@ cut_jfs(
 #     retF = feasible_values[2]
 #     retI = infeasible_values[2]
 #     
-#     if (length(feasible_values) > 2) {
-#         feasible_values = feasible_values[3:length(feasible_values)]
-#         infeasible_values = infeasible_values[3:length(infeasible_values)]
+#     if (n > 2) {
+#         feasible_values = feasible_values[3:n]
+#         infeasible_values = infeasible_values[3:n]
 #     } else{
 #         feasible_values = numeric(0)
 #         infeasible_values = numeric(0)
@@ -213,19 +202,19 @@ cut_jfs(
 #             jointposteriorI[p, 1] = ifelse(simI[p, 2] * 4.33 >= rate[which(round(retention, 3) == round(simI[p, 1], 3))] , 1, 0)
 #         }
 #         
-#         if (length(feasible_values) == 0) {
+#         if (n == 0) {
 #             jointposteriorotherF = NA
 #             jointposteriorotherI = NA
 #             
-#         } else if (length(feasible_values) > 0) {
+#         } else if (n > 0) {
 #             all_conditions = c(feasible_values, infeasible_values)
 #             direction = ifelse((feasible_values - infeasible_values) > 0, 1, 0)
-#             sim_mat = matrix(NA, sample_size, length(feasible_values) * 2)
+#             sim_mat = matrix(NA, sample_size, n * 2)
 #             for (l in 1:length(all_conditions)){
 #                 sim_mat[, l] = rbinom(sample_size, 1, all_conditions[l])
 #             }
-#             marginalpostsF = matrix(NA, length(feasible_values), 1)
-#             for (l in 1:length(feasible_values)) {
+#             marginalpostsF = matrix(NA, n, 1)
+#             for (l in 1:n) {
 #                 if (direction[l] == 1) {
 #                     marginalpostsF[l, 1] <-1 - pbeta(feasible_values[l],prior_alpha[l] + sum(sim_mat[, l]),prior_beta[l] + sample_size - sum(sim_mat[, l]))
 #                 } else if (direction[l] == 0) {
@@ -235,9 +224,9 @@ cut_jfs(
 #             
 #             jointposteriorotherF = prod(marginalpostsF)
 #             
-#             marginalpostsI = matrix(NA, length(infeasible_values), 1)
-#             for (l in (length(feasible_values) + 1):(length(feasible_values) + length(infeasible_values))) {
-#                 set = (length(feasible_values) + 1):(length(feasible_values) + length(infeasible_values))
+#             marginalpostsI = matrix(NA, n, 1)
+#             for (l in (n + 1):(n + n)) {
+#                 set = (n + 1):(n + n)
 #                 Il = which(set == l)
 #                 empty_rows <-which(rowSums(is.na(marginalpostsI)) == ncol(marginalpostsI))
 #                 if (direction[Il] == 1) {
@@ -266,10 +255,10 @@ cut_jfs(
 # }
 # if (include_recruitment == TRUE) {
 #     condition_probs = matrix(NA, num_simulations, 2)
-#     if (length(feasible_values) == 0) {
+#     if (n == 0) {
 #         condition_probs[, 1] = combinedposts[, 1]
 #         condition_probs[, 2] = combinedposts[, 3]
-#     } else if (length(feasible_values) > 0) {
+#     } else if (n > 0) {
 #         condition_probs[, 1] = combinedposts[, 1] * combinedposts[, 2]
 #         condition_probs[, 2] = combinedposts[, 3] * combinedposts[, 4]
 #     }
