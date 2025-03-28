@@ -20,9 +20,9 @@
 
 
 cut_jfs = function(feasible_values, infeasible_values, sample_size, ppf = 0.80, num_simulations = 1000, prior_alpha = c(1), prior_beta = c(1),
-                   include_recruitment = FALSE, recruitment_window = NULL, preliminary_sample_size = NULL,alpha_rec = NULL,beta_rec = NULL) {
+                   include_recruitment = FALSE, recruitment_window = NULL, preliminary_sample_size = NULL, alpha_rec = NULL, beta_rec = NULL) {
     # only able to analyses recruitment if retention is used
-    if (max(feasible_values) > 1 & n == 1) stop("Recruitment needs to be analyses with retention")
+    if (max(feasible_values) > 1 & length(feasible_values) == 1) stop("Recruitment needs to be analyses with retention")
     # makes a vector of equal length to feasible_values
     if (length(feasible_values) != length(infeasible_values))stop("feasible_values and infeasible_values must be the same length.")
     n = length(feasible_values)
@@ -34,8 +34,7 @@ cut_jfs = function(feasible_values, infeasible_values, sample_size, ppf = 0.80, 
     }
     # error handling that feasible_values
     if (max(feasible_values) > 1 | max(infeasible_values) > 1 | min(feasible_values) < 0 | min(infeasible_values) < 0) {
-        stop("Values in feasible_values and infeasible_values must be in [0,1], 
-             to calculate the JFS cutpoint for non-binomial data you can edit the function code.")
+        stop("Values in feasible_values and infeasible_values must be in [0,1], to calculate the JFS cutpoint for non-binomial data you can edit the function code.")
     }
    
     if (include_recruitment == FALSE) {
@@ -78,9 +77,13 @@ cut_jfs = function(feasible_values, infeasible_values, sample_size, ppf = 0.80, 
 
     cut_index = tail(which(picker_feasible >= ppf), n = 1)
     cut_point = picker_values[cut_index]
-    pf = mean(feasible_conditional_probs >= cutpoint)
-    pi = mean(infeasible_conditional_probs >= cutpoint)
-    if (cutpoint == 0) return("Unable to identify a non-zero cut point.") else return(list("Cut point" = cut_point, "P(P|F)" = pf, "P(P|I)" = pi))
+    pf = mean(feasible_conditional_probs >= cut_point)
+    pi = mean(infeasible_conditional_probs >= cut_point)
+    if (cut_point == 0) {
+        return("Unable to identify a non-zero cut point.")
+    } else {
+        return(list("Cut point" = cut_point, "P(P|F)" = pf, "P(P|I)" = pi))
+    } 
 }
 
 
