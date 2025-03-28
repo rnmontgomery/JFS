@@ -50,7 +50,7 @@ cut_jfs = function(feasible_values, infeasible_values, sample_size, ppf = 0.80, 
             
             for (j in seq_along(feasible_values)) {
                 post_feasible = pbeta(feasible_values[j], prior_alpha[j] + sum(sim_feasible), prior_beta[j] + sample_size - sum(sim_feasible))
-                post_infeasible = pbeta(infeasible_values[j], prior_alpha[j] + sum(sim_infeasible), prior_beta[j] + sample_size - sum(sim_infeasible))
+                post_infeasible = pbeta(feasible_values[j], prior_alpha[j] + sum(sim_infeasible), prior_beta[j] + sample_size - sum(sim_infeasible))
                 if (direction[j] == 1) {
                     marginal_posts[j] = 1 - post_feasible
                     marginal_posts_2[j] = 1 - post_infeasible
