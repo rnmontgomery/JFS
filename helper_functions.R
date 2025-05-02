@@ -15,6 +15,10 @@ simulate_recruitment = function(recruitment_rate, sample_size, alpha, beta, num_
 # NOTE: THE get_conditional_probs FUNCTION is expecting vectors of priors that the error handling will fix 
 ############################################################################################################
 
+############################################################################################################
+# I'M LEAVING THE NON-VECTORIZED ONE AS A FUTURE REFERENCE 
+############################################################################################################
+
 # OG version after reducing from using matrices 
 get_conditional_probs = function(n, feasible_values, infeasible_values, sample_size, prior_alpha, prior_beta, num_simulations) {
     direction = ifelse((feasible_values - infeasible_values) > 0, 1, 0)
@@ -42,12 +46,15 @@ get_conditional_probs = function(n, feasible_values, infeasible_values, sample_s
 }
 
 # new vectorized version 
-get_conditional_probs_vecorized = function(feasible_values, infeasible_values, n, sample_size, prior_alpha, prior_beta,num_simulations) {
+get_conditional_probs_vecorized = function(feasible_values, infeasible_values, sample_size, prior_alpha, prior_beta,num_simulations) {
     direction = ifelse((feasible_values - infeasible_values) > 0, 1, 0)
     
     simulate_once = function() {
-        sim_feasible = rbinom(sample_size, 1, feasible_values)
-        sim_infeasible = rbinom(sample_size, 1, infeasible_values)
+        # these should probably be a sapply statement 
+        # sim_feasible = rbinom(sample_size, 1, feasible_values) # make sure it's not alternating back and forth, but for each element in the vector 
+        # sim_infeasible = rbinom(sample_size, 1, infeasible_values)
+        sim_feasible = sapply(feasible_values, function(p) rbinom(sample_size, 1, p))
+        sim_infeasible = sapply(infeasible_values, function(p) rbinom(sample_size, 1, p))
         
         post_feasible = pbeta(
             feasible_values,
